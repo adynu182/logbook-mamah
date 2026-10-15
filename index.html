@@ -8,16 +8,18 @@
 <!--
 SETUP (sekali saja)
 1. console.firebase.google.com > buat project > Build > Firestore Database > Create.
-2. Project settings > Your apps > Web (</>) > salin firebaseConfig ke CFG di bawah.
+2. Project settings > Your apps > Web (</>) > salin firebaseConfig ke firebase-config.js.
 3. Firestore > Rules, tempel lalu Publish:
    rules_version='2'; service cloud.firestore { match /databases/{d}/documents {
      match /catatan/{i} { allow read, create, delete: if true; }
      match /jadwal/{i}  { allow read, create, delete: if true; } } }
-4. Upload file ini ke Firebase Hosting / Netlify / GitHub Pages, lalu bagikan link ke caregiver dan keluarga.
+4. Upload index.html dan firebase-config.js ke Firebase Hosting / Netlify / GitHub Pages, lalu bagikan link ke caregiver dan keluarga.
 Catatan: tanpa login, siapa pun yang punya link bisa membaca dan mengisi. Jangan sebarkan link.
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght@24,500&icon_names=add,bar_chart,bed,calendar_month,check,chevron_left,chevron_right,content_copy,download,edit_note,medication,menu_book,monitor_heart,radio_button_unchecked,restaurant,sentiment_satisfied,upload_file,warning,wc&display=block" rel="stylesheet">
 <style>
 :root{--fs:1;--bg:#E6EFEE;--s:#fff;--ink:#14282B;--mut:#47595D;--ln:#B7C9CC;--ed:#8FA7AB;--br:#17606B;--brd:#0B3B43;--brs:#D6EAEC;--ok:#23704E;--wn:#8A520C;--bd:#B3261E;--bds:#FCE9E6;color-scheme:light}
 *{box-sizing:border-box}
@@ -42,15 +44,15 @@ h2{font-size:calc(20px*var(--fs));margin:6px 0 12px;line-height:1.25}.hd2{margin
 .note{background:#FFF1CF;border:2px solid #EBCB85;border-radius:16px;padding:14px;font-size:calc(15px*var(--fs));margin:0 0 16px}.note.bad{background:var(--bds);border-color:#E6B3AD;color:var(--bd)}
 .bar{height:12px;background:var(--brs);border-radius:8px;overflow:hidden;margin-bottom:14px;box-shadow:inset 0 2px 3px #0003}.bar i{display:block;height:100%;background:var(--ok);border-radius:8px}
 .chips{display:flex;flex-wrap:wrap;gap:12px}
-.tag{padding:6px 12px;border-radius:14px;font-size:calc(15px*var(--fs));font-weight:700;background:#F8E9D0;color:var(--wn)}.tag.ok{background:#D8EFE2;color:var(--ok)}.tag:not(.ok)::before{content:"○ "}
-.b1,.b2{min-height:50px;padding:0 20px;border:2px solid var(--ed);border-radius:14px;font-size:calc(17px*var(--fs));font-weight:700}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:14px;font-size:calc(15px*var(--fs));font-weight:700;background:#F8E9D0;color:var(--wn)}.tag.ok{background:#D8EFE2;color:var(--ok)}
+.b1,.b2{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;padding:0 20px;border:2px solid var(--ed);border-radius:14px;font-size:calc(17px*var(--fs));font-weight:700}
 .b1{--ed:var(--brd);background:linear-gradient(#1F7381,var(--br));color:#fff}
 .b2{background:linear-gradient(#fff,#EEF4F5);color:var(--br)}
 .b2.sm{min-height:44px;padding:0 14px;font-size:calc(15px*var(--fs));margin-bottom:12px}
 .w{width:100%;margin:16px 0 8px}
-.chip{min-height:46px;padding:0 16px;border:2px solid var(--ed);border-radius:23px;background:linear-gradient(#fff,#EEF4F5);font-size:calc(17px*var(--fs));color:var(--ink)}
+.chip{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:46px;padding:0 16px;border:2px solid var(--ed);border-radius:23px;background:linear-gradient(#fff,#EEF4F5);font-size:calc(17px*var(--fs));color:var(--ink)}
 .chip.on{--ed:var(--brd);background:var(--br);border-color:var(--brd);color:#fff;font-weight:700;transform:translateY(4px);box-shadow:0 1px 0 var(--ed),inset 0 3px 6px #0006}
-.chip.on::before{content:"✓ "}
+.chip.on::before{content:"check";content:"check"/""}
 .cats{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0 20px}
 .cat{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:96px;padding:8px 6px;border:2px solid var(--ed);border-radius:20px;background:linear-gradient(#fff,#EEF4F5);font-size:calc(17px*var(--fs));font-weight:700;line-height:1.2;color:var(--ink);text-align:center}
 .cat i,.ft i{display:grid;place-items:center;width:46px;height:46px;border-radius:50%;background:var(--cs);font-style:normal;font-size:calc(26px*var(--fs))}
@@ -58,16 +60,16 @@ h2{font-size:calc(20px*var(--fs));margin:6px 0 12px;line-height:1.25}.hd2{margin
 .e{display:flex;gap:12px;align-items:flex-start;background:var(--s);border:2px solid var(--ln);border-left:8px solid var(--c,var(--br));border-radius:16px;padding:12px;margin-bottom:12px;box-shadow:0 3px 0 var(--ln)}
 .e>div:not(.hm){flex:1;min-width:0}.e b{display:block;font-size:calc(17px*var(--fs))}.e span{display:block;word-break:break-word}
 .hm{flex:none;min-width:70px;text-align:center;background:var(--cs,var(--brs));color:var(--c,var(--br));font-weight:700;font-size:calc(19px*var(--fs));border-radius:12px;padding:6px 4px}
-.e small{display:block;color:var(--mut);font-size:calc(14px*var(--fs));margin-top:2px}.fw{margin:4px 0;color:var(--bd);font-weight:700}
+.e small{display:block;color:var(--mut);font-size:calc(14px*var(--fs));margin-top:2px}.fw{display:flex;align-items:flex-start;gap:4px;margin:4px 0;color:var(--bd);font-weight:700}
 .e.fl{--c:var(--bd);--cs:#F7CFCA;background:var(--bds);border-color:#E6B3AD;border-left-color:var(--bd)}
 .x{--ed:#D9A6A0;flex:none;min-height:44px;padding:0 12px;border:2px solid #D9A6A0;border-radius:12px;background:linear-gradient(#fff,#FBE4E1);color:#8C1D18;font-size:calc(14px*var(--fs));font-weight:700}
 .hd{display:block;position:relative;width:100%;text-align:left;padding:14px 50px 14px 16px;margin-bottom:14px;border:2px solid var(--ed);border-radius:18px;background:linear-gradient(#fff,#F1F6F6);font-size:calc(17px*var(--fs));color:inherit}
-.hd::after{content:"›";position:absolute;right:18px;top:50%;margin-top:-22px;font-size:calc(32px*var(--fs));line-height:1;color:var(--br)}
+.hd::after{content:"chevron_right";content:"chevron_right"/"";position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:calc(28px*var(--fs));color:var(--br)}
 .hd b{display:block;font-size:calc(17px*var(--fs))}.hd span{display:block;color:var(--mut);font-size:calc(15px*var(--fs))}.hd em{display:block;font-style:normal;font-weight:700;color:var(--bd);font-size:calc(15px*var(--fs))}
-.fab{--ed:var(--brd);position:fixed;left:0;right:0;margin:0 auto;width:calc(100% - 28px);max-width:532px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:6;min-height:54px;border:2px solid var(--brd);border-radius:27px;background:linear-gradient(#1F7381,var(--br));color:#fff;font-size:calc(19px*var(--fs));font-weight:700}
+.fab{--ed:var(--brd);display:flex;align-items:center;justify-content:center;gap:8px;position:fixed;left:0;right:0;margin:0 auto;width:calc(100% - 28px);max-width:532px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:6;min-height:54px;border:2px solid var(--brd);border-radius:27px;background:linear-gradient(#1F7381,var(--br));color:#fff;font-size:calc(19px*var(--fs));font-weight:700}
 nav{position:fixed;bottom:0;left:0;right:0;z-index:5;display:flex;gap:8px;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:#CFE0E2;border-top:2px solid var(--ed)}
 nav button{flex:1;min-height:58px;border:2px solid var(--ed);border-radius:16px;background:linear-gradient(#fff,#EEF4F5);color:var(--ink);font-size:calc(15px*var(--fs));font-weight:700;line-height:1.2}
-nav button i{display:block;font-style:normal;font-size:calc(22px*var(--fs))}
+nav button .mi{display:block;font-size:calc(24px*var(--fs))}
 nav button.on{--ed:var(--brd);background:var(--br);border-color:var(--brd);color:#fff;transform:translateY(4px);box-shadow:0 1px 0 var(--ed),inset 0 3px 6px #0006}
 .fld{display:block;margin:18px 0;font-weight:700;font-size:calc(17px*var(--fs))}
 .fld input,.fld textarea,.fld select{display:block;width:100%;min-height:50px;margin-top:6px;padding:10px 12px;border:2px solid var(--ed);border-radius:12px;font-size:calc(17px*var(--fs));font-weight:400;background:#fff;color:var(--ink);box-shadow:inset 0 3px 5px #14282B22}
@@ -93,28 +95,28 @@ dialog::backdrop{background:#0009}
 .fsb:disabled{opacity:.35;box-shadow:none;transform:translateY(5px)}
 nav button{font-size:calc(15px*min(var(--fs),1.15))}
 body.past header,body.past main{filter:grayscale(1)}
+/* ikon Material Symbols (ligature) */
+.mi,.chip.on::before,.hd::after{font-family:"Material Symbols Rounded";font-weight:500;font-style:normal;line-height:1;letter-spacing:normal;text-transform:none;white-space:nowrap;direction:ltr;font-feature-settings:"liga";-webkit-font-smoothing:antialiased}
+.mi{display:inline-block;flex:none;font-size:1.25em;user-select:none}
+.chip.on::before{font-size:1.25em}
+.dn button .mi{font-size:1em}
 :focus-visible{outline:4px solid #E0A526;outline-offset:2px}
 </style>
 </head>
 <body>
-<header><div class="dn"><button id="pv" aria-label="Hari sebelumnya">‹</button><b id="dl"></b><button id="nx" aria-label="Hari berikutnya">›</button></div></header>
-<div class="fsr"><span>Ukuran tulisan</span><button type="button" class="b2 fsb" data-fs="-1" aria-label="Perkecil tulisan">A−</button><b id="fsv">100%</b><button type="button" class="b2 fsb" data-fs="1" aria-label="Perbesar tulisan">A+</button></div>
+<header><div class="dn"><button id="pv" aria-label="Hari sebelumnya"><i class="mi" aria-hidden="true">chevron_left</i></button><b id="dl"></b><button id="nx" aria-label="Hari berikutnya"><i class="mi" aria-hidden="true">chevron_right</i></button></div></header>
+<div class="fsr" hidden><span>Ukuran tulisan</span><button type="button" class="b2 fsb" data-fs="-1" aria-label="Perkecil tulisan">A−</button><b id="fsv">100%</b><button type="button" class="b2 fsb" data-fs="1" aria-label="Perbesar tulisan">A+</button></div>
 <main id="v"></main>
-<button class="fab" id="add">＋ Tambah Catatan</button>
-<nav><button data-tab="now"><i>📝</i>Catatan</button><button data-tab="dash"><i>📊</i>Dashboard</button><button data-tab="jad"><i>📅</i>Jadwal</button></nav>
+<button class="fab" id="add"><i class="mi" aria-hidden="true">add</i>Tambah Catatan</button>
+<nav><button data-tab="now"><i class="mi" aria-hidden="true">edit_note</i>Catatan</button><button data-tab="dash"><i class="mi" aria-hidden="true">bar_chart</i>Dashboard</button><button data-tab="jad"><i class="mi" aria-hidden="true">calendar_month</i>Jadwal</button></nav>
 <dialog id="sh"><div id="sb"></div></dialog>
 <div id="toast" role="status"></div>
+<input type="file" id="impf" accept=".json,application/json" hidden>
 
+<script src="firebase-config.js"></script>
 <script type="module">
 // ===== PENGATURAN =====
-const CFG={
-    apiKey: "AIzaSyDNNqLhhn4_lDM23hWcjy0rQMK9Fqm50h8",
-    authDomain: "catatan-df365.firebaseapp.com",
-    projectId: "catatan-df365",
-    storageBucket: "catatan-df365.firebasestorage.app",
-    messagingSenderId: "2394163039",
-    appId: "1:2394163039:web:9f61391793ea88851318ea"
-}; // isi dari Firebase Console
+const CFG=window.firebaseConfig||{}; // diisi dari firebase-config.js
 const LIM={sisMax:160,sisMin:90,diaMax:100,nadiMin:50,nadiMax:110,spo2Min:94}; // sesuaikan anjuran dokter
 const DAYS=21; // lama riwayat yang dimuat
 
@@ -128,7 +130,8 @@ elim:[['jenis','Isi pampers','1',['BAK','BAB','BAK dan BAB','Kering']],['banyak'
 kondisi:[['sadar','Kesadaran','1',['Sadar penuh','Mengantuk','Sulit dibangunkan']],['bicara','Bicara','1',['Jelas','Pelo','Lebih sulit','Tidak bicara']],['tangan','Kekuatan tangan/kaki','1',['Seperti biasa','Lebih baik','Lebih lemah']],['nyeri','Nyeri','1',['Tidak ada','Ringan','Sedang','Berat']],['mood','Suasana hati','1',['Tenang','Gelisah','Sedih']],['cat','Catatan (opsional)','t']],
 lain:[['jenis','Kegiatan','1',['Fisioterapi','Ubah posisi','Latihan gerak','Mandi/kebersihan','Cek kulit','Tidur','Kejadian khusus']],['cat','Keterangan','t']]};
 const KEY={makan:'waktu',obat:'obat',elim:'jenis',lain:'jenis'};
-const IC={vital:'💓',makan:'🍚',obat:'💊',elim:'🧷',kondisi:'🙂',lain:'🛏️'};
+const IC={vital:'monitor_heart',makan:'restaurant',obat:'medication',elim:'wc',kondisi:'sentiment_satisfied',lain:'bed'}; // nama ikon Material Symbols
+const ic=n=>`<i class="mi" aria-hidden="true">${n}</i>`;
 
 // ===== UTIL =====
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
@@ -141,7 +144,7 @@ const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearT
 let nm='';try{nm=localStorage.getItem('by')||''}catch(e){}
 let tab='now',cur=today,all=[],jad=[],day=[],kind='vital',vals={},err='',jam='',step=0;
 
-// ===== UKURAN TULISAN (A- / A+) =====
+// ===== UKURAN TULISAN (A- / A+): kontrolnya hanya tampil di tab Jadwal, ukurannya berlaku di semua tab =====
 const FS=[.9,1,1.15,1.3,1.45];let fi=1; // fi=1 berarti ukuran awal 100%; ubah daftar FS bila perlu
 try{const v=parseInt(localStorage.getItem('fs2'));if(v>=0&&v<FS.length)fi=v}catch(e){}
 function setFs(i){fi=Math.max(0,Math.min(FS.length-1,i));document.documentElement.style.setProperty('--fs',FS[fi]);$('#fsv').textContent=Math.round(FS[fi]*100)+'%';document.querySelector('[data-fs="-1"]').disabled=fi==0;document.querySelector('[data-fs="1"]').disabled=fi==FS.length-1;try{localStorage.setItem('fs2',fi)}catch(e){}}
@@ -154,7 +157,12 @@ try{if(CFG.projectId){
  const db=S.getFirestore(A.initializeApp(CFG));
  store={live:1,
   sub:(c,from,cb)=>S.onSnapshot(from?S.query(S.collection(db,c),S.where('date','>=',from)):S.collection(db,c),s=>cb(s.docs.map(d=>({id:d.id,...d.data()}))),e=>{err='Gagal membaca data ('+e.code+'). Periksa config dan rules Firestore.';render()}),
-  add:(c,o)=>S.addDoc(S.collection(db,c),o),del:(c,id)=>S.deleteDoc(S.doc(db,c,id))};
+  add:(c,o)=>S.addDoc(S.collection(db,c),o),del:(c,id)=>S.deleteDoc(S.doc(db,c,id)),
+  dump:async c=>(await S.getDocsFromServer(S.collection(db,c))).docs.map(d=>({id:d.id,...d.data()})),
+  put:async(c,items)=>{ // buat dokumen baru dengan id asli; yang sudah ada dilewati (rules tidak mengizinkan update)
+   const have=new Set((await S.getDocsFromServer(S.collection(db,c))).docs.map(d=>d.id)),nw=items.filter(x=>!have.has(x.id));
+   for(let i=0;i<nw.length;i+=400){const b=S.writeBatch(db);nw.slice(i,i+400).forEach(({id,...o})=>b.set(S.doc(db,c,id),o));await b.commit()}
+   return nw.length}};
 }}catch(e){err='Firebase tidak bisa dimuat. Periksa koneksi internet.'}
 if(!store){
  const m={catatan:[],jadwal:[]},ls={};
@@ -188,7 +196,9 @@ if(!store){
   sub:(c,from,cb)=>{ls[c]=()=>cb(m[c].filter(x=>!from||x.date>=from));ls[c]()},
   add:async(c,o)=>{m[c].push({id:'d'+Date.now()+Math.random(),...o});done(c)},
   del:async(c,id)=>{m[c]=m[c].filter(x=>x.id!==id);done(c)},
-  reset:f=>{m.catatan=[];m.jadwal=[];if(f)seed();done('catatan');done('jadwal')}};
+  reset:f=>{m.catatan=[];m.jadwal=[];if(f)seed();done('catatan');done('jadwal')},
+  dump:async c=>m[c].map(x=>({...x})),
+  put:async(c,items)=>{const have=new Set(m[c].map(x=>x.id)),nw=items.filter(x=>!have.has(x.id));m[c]=m[c].concat(nw);done(c);return nw.length}};
 }
 
 // ===== LOGIKA LAPORAN =====
@@ -215,14 +225,14 @@ function report(){
  return L.join('\n')}
 
 // ===== TAMPILAN =====
-const banners=()=>(store.live?'':'<div class="note">Mode demo dengan data contoh 7 hari. Data hanya tersimpan di HP ini; isi firebaseConfig agar bisa dilihat bersama.<div class="chips" style="margin-top:8px"><button class="chip" id="rs">Isi ulang data contoh</button><button class="chip" id="cl">Kosongkan data</button></div></div>')+(err?`<p class="note bad">${esc(err)}</p>`:'');
-const row=e=>{const f=flags(e);return `<article class="e ${e.type}${f.length?' fl':''}"><div class="hm">${tm(e)}</div><div><b>${T[e.type]}</b><span>${esc(sum(e))}</span>${f.length?`<p class="fw">⚠ ${esc(f.join(', '))}</p>`:''}${e.by?`<small>Dicatat: ${esc(e.by)}</small>`:''}</div><button class="x" data-del="${e.id}" data-col="catatan">Hapus</button></article>`};
+const banners=()=>(store.live?'':'<div class="note">Mode demo dengan data contoh 7 hari. Data hanya tersimpan di HP ini; isi firebase-config.js agar bisa dilihat bersama.<div class="chips" style="margin-top:8px"><button class="chip" id="rs">Isi ulang data contoh</button><button class="chip" id="cl">Kosongkan data</button></div></div>')+(err?`<p class="note bad">${esc(err)}</p>`:'');
+const row=e=>{const f=flags(e);return `<article class="e ${e.type}${f.length?' fl':''}"><div class="hm">${tm(e)}</div><div><b>${T[e.type]}</b><span>${esc(sum(e))}</span>${f.length?`<p class="fw">${ic('warning')}${esc(f.join(', '))}</p>`:''}${e.by?`<small>Dicatat: ${esc(e.by)}</small>`:''}</div><button class="x" data-del="${e.id}" data-col="catatan">Hapus</button></article>`};
 function viewNow(){
  const ok=REQ.filter(r=>r[1]()).length,al=day.flatMap(e=>flags(e).map(f=>`${f} (${tm(e)})`));
  const nx=jad.filter(j=>j.date>=today&&j.date<=add(today,7)).sort(cmp).slice(0,3);
  return banners()
  +(al.length?`<section class="card bad"><h2>Perlu perhatian</h2>${al.map(a=>`<p class="m0">${esc(a)}</p>`).join('')}<p class="sub">Bila berulang atau muncul gejala baru, hubungi dokter.</p></section>`:'')
- +`<section class="card"><h2>Laporan terisi ${ok} dari ${REQ.length}</h2><div class="bar"><i style="width:${ok/REQ.length*100}%"></i></div><div class="chips">${REQ.map(r=>`<span class="tag${r[1]()?' ok':''}">${r[1]()?'✓ ':''}${r[0]}</span>`).join('')}</div><button class="b2 w" id="cp">📋 Salin laporan untuk WhatsApp</button></section>`
+ +`<section class="card"><h2>Laporan terisi ${ok} dari ${REQ.length}</h2><div class="bar"><i style="width:${ok/REQ.length*100}%"></i></div><div class="chips">${REQ.map(r=>`<span class="tag${r[1]()?' ok':''}">${ic(r[1]()?'check':'radio_button_unchecked')}${r[0]}</span>`).join('')}</div><button class="b2 w" id="cp">${ic('content_copy')}Salin laporan untuk WhatsApp</button></section>`
  +(nx.length?`<section class="card"><h2>Jadwal terdekat</h2>${nx.map(j=>`<p class="m0"><b>${esc(j.kind)}</b> ${j.date===today?'hari ini':fmt(j.date)} ${esc(j.time||'')}</p>`).join('')}</section>`:'')
  +`<h2 class="hd2">Catatan ${cur===today?'hari ini':fmt(cur)}</h2>`+(day.length?day.map(row).join(''):'<p class="sub">Belum ada catatan. Tekan tombol Tambah Catatan di bawah untuk mulai.</p>')}
 // ===== DASHBOARD 7 HARI =====
@@ -255,9 +265,10 @@ function viewDash(){
  +card('Nadi (kali per menit)',ch('nadi','#6B4FA0',40,120,[LIM.nadiMin,LIM.nadiMax],v=>v<LIM.nadiMin||v>LIM.nadiMax))
  +card('Minum per hari (ml)',bars(per('makan').map(a=>a.reduce((n,e)=>n+(e.d.ml||0),0)),1500,'#2A6AA3'))
  +card('Ganti pampers per hari (kali)',bars(per('elim').map(a=>a.length),6,'#3F7A31'))
- +`<button class="b2 w" data-tab="hist">📖 Lihat riwayat harian</button>`}
+ +`<button class="b2 w" data-tab="hist">${ic('menu_book')}Lihat riwayat harian</button>`
+ +`<h2 class="hd2">Backup dan import data</h2><section class="card"><p class="sub" style="margin-top:0">Backup menyimpan semua catatan dan jadwal ke satu file. Import menambahkan isi file backup; data yang sudah ada tidak ditimpa.</p><div class="acts"><button type="button" class="b2" id="bkp">${ic('download')}Backup</button><button type="button" class="b2" id="imp">${ic('upload_file')}Import</button></div></section>`}
 function viewHist(){
- return banners()+`<button class="b2 sm" data-tab="dash">‹ Kembali ke Dashboard</button><h2>${DAYS-7} hari terakhir</h2>`+[...Array(DAYS-7)].map((_,i)=>{const d=add(today,-i),es=all.filter(e=>e.date===d);
+ return banners()+`<button class="b2 sm" data-tab="dash">${ic('chevron_left')}Kembali ke Dashboard</button><h2>${DAYS-7} hari terakhir</h2>`+[...Array(DAYS-7)].map((_,i)=>{const d=add(today,-i),es=all.filter(e=>e.date===d);
   const sis=es.filter(e=>e.type=='vital'&&e.d.sis).map(e=>e.d.sis),ml=es.reduce((a,e)=>a+(e.type=='makan'?e.d.ml||0:0),0),n=j=>es.filter(e=>e.type=='elim'&&(e.d.jenis||'').split(' dan ').includes(j)).length,fl=es.filter(e=>flags(e).length).length;
   return `<button class="hd" data-go="${d}"><b>${fmt(d,1)}</b><span>${es.length?`${es.length} catatan, minum ${ml} ml, BAK ${n('BAK')}x, BAB ${n('BAB')}x${sis.length?`, sistol ${Math.min(...sis)} sampai ${Math.max(...sis)}`:''}`:'Belum ada catatan'}</span>${fl?`<em>${fl} catatan perlu perhatian</em>`:''}</button>`}).join('')}
 function viewJad(){
@@ -269,16 +280,58 @@ function render(){
  $('#dl').innerHTML=tab=='now'?`${fmt(cur,1)}<small>${cur===today?'Hari ini':'Sudah lewat'}</small>`:{dash:'Dashboard<small>7 hari terakhir</small>',hist:'Riwayat harian<small>Ketuk satu hari untuk membukanya</small>',jad:'Jadwal<small>Fisioterapi dan kontrol dokter</small>'}[tab];
  $('#nx').disabled=cur>=today;$('#pv').style.visibility=$('#nx').style.visibility=tab=='now'?'visible':'hidden';
  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab==(tab=='hist'?'dash':tab)));
- $('#add').hidden=tab!='now';
+ $('#add').hidden=tab!='now';$('.fsr').hidden=tab!='jad';
  $('#v').innerHTML=tab=='now'?viewNow():tab=='dash'?viewDash():tab=='hist'?viewHist():viewJad()}
 function sheet(){
  $('#sh').scrollTop=0;
- if(!step){$('#sb').innerHTML=`<div class="sh"><div class="grip"></div><h2>Mau catat apa?</h2><div class="cats">${Object.keys(T).map(k=>`<button type="button" class="cat ${k}" data-k="${k}"><i>${IC[k]}</i>${T[k]}</button>`).join('')}</div><button type="button" class="b2 w" id="cx">Batal</button></div>`;return}
- $('#sb').innerHTML=`<div class="sh"><div class="grip"></div><button type="button" class="b2 sm" id="bk">‹ Ganti jenis catatan</button><h2 class="ft ${kind}"><i>${IC[kind]}</i>${T[kind]}</h2>`
+ if(!step){$('#sb').innerHTML=`<div class="sh"><div class="grip"></div><h2>Mau catat apa?</h2><div class="cats">${Object.keys(T).map(k=>`<button type="button" class="cat ${k}" data-k="${k}">${ic(IC[k])}${T[k]}</button>`).join('')}</div><button type="button" class="b2 w" id="cx">Batal</button></div>`;return}
+ $('#sb').innerHTML=`<div class="sh"><div class="grip"></div><button type="button" class="b2 sm" id="bk">${ic('chevron_left')}Ganti jenis catatan</button><h2 class="ft ${kind}">${ic(IC[kind])}${T[kind]}</h2>`
  +`<label class="fld">Jam ${kind=='elim'?'ganti pampers':'kejadian'}<input type="time" id="jm" value="${jam}"></label>`+F[kind].map(([k,l,t,o])=>t=='n'?`<label class="fld">${l}<span class="u"><input inputmode="decimal" data-f="${k}" value="${esc(vals[k]??'')}"><i>${o}</i></span></label>`
   :t=='t'?`<label class="fld">${l}<textarea rows="2" data-f="${k}" placeholder="${esc(o||'')}">${esc(vals[k]||'')}</textarea></label>`
   :`<div class="fld">${l}<div class="chips" style="margin-top:6px">${o.map(x=>`<button type="button" class="chip${[].concat(vals[k]||[]).includes(x)?' on':''}" data-c="${k}" data-t="${t}" data-v="${esc(x)}">${x}</button>`).join('')}</div></div>`).join('')
  +`<label class="fld">Dicatat oleh<input id="by" value="${esc(nm)}" placeholder="Nama caregiver" autocomplete="name"></label><p class="er" id="er"></p><div class="acts"><button type="button" class="b2" id="cx">Batal</button><button type="button" class="b1" id="sv">Simpan</button></div></div>`}
+
+// ===== BACKUP & IMPORT =====
+let busy=0;
+const okDate=s=>typeof s=='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s);
+const okId=s=>typeof s=='string'&&s.length>0&&s.length<=200&&!s.includes('/')&&!/^(\.|\.\.|__.*__)$/.test(s);
+function clean(c,x){ // periksa dan bersihkan satu data dari file; null bila tidak valid
+ if(!x||typeof x!='object'||!okId(x.id)||!okDate(x.date))return null;
+ const s=v=>typeof v=='string'?v:'';
+ if(c=='jadwal')return s(x.kind)?{id:x.id,kind:x.kind,date:x.date,time:s(x.time),note:s(x.note)}:null;
+ if(!Object.keys(T).includes(x.type)||!Number.isFinite(x.t)||!x.d||typeof x.d!='object')return null;
+ const d={};
+ for(const[k,,t]of F[x.type]){const v=x.d[k];if(v==null||v==='')continue;
+  if(t=='n'){if(Number.isFinite(v))d[k]=v}
+  else if(t=='m'){if(Array.isArray(v)&&v.length)d[k]=v.map(String)}
+  else if(typeof v=='string'||typeof v=='number')d[k]=String(v)}
+ return{id:x.id,date:x.date,type:x.type,t:x.t,by:s(x.by),d}}
+async function backup(){
+ if(busy)return;busy=1;toast('Menyiapkan backup...');
+ try{
+  const[catatan,jadwal]=await Promise.all([store.dump('catatan'),store.dump('jadwal')]);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify({app:'logbook-mamah',version:1,exportedAt:new Date().toISOString(),catatan,jadwal})],{type:'application/json'}));
+  a.download=`logbook-backup-${today}.json`;document.body.append(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  toast(`Backup: ${catatan.length} catatan, ${jadwal.length} jadwal`)
+ }catch(_){toast('Backup gagal, cek koneksi')}
+ busy=0}
+document.addEventListener('change',async e=>{
+ if(e.target.id!='impf')return;
+ const f=e.target.files[0];e.target.value='';
+ if(!f||busy)return;busy=1;
+ try{
+  let j;try{j=JSON.parse(await f.text())}catch(_){}
+  if(!j||j.app!='logbook-mamah'){toast('File bukan backup logbook');return}
+  toast('Mengimpor...');let nw=0,skip=0;
+  for(const c of['catatan','jadwal']){
+   const seen=new Set(),ok=[];
+   for(const x of Array.isArray(j[c])?j[c]:[]){const y=clean(c,x);if(y&&!seen.has(y.id)){seen.add(y.id);ok.push(y)}else skip++}
+   const n=await store.put(c,ok);nw+=n;skip+=ok.length-n}
+  toast(nw?`Import: ${nw} baru, ${skip} dilewati`:'Tidak ada data baru')
+ }catch(_){toast('Import gagal, cek koneksi')}
+ finally{busy=0}});
 
 // ===== EVENT =====
 document.addEventListener('input',e=>{const t=e.target;if(t.dataset.f)vals[t.dataset.f]=t.value;if(t.id=='by')nm=t.value});
@@ -310,6 +363,8 @@ document.addEventListener('click',e=>{const g=s=>e.target.closest(s);let x;
   else{x.dataset.arm=1;x.textContent='Yakin hapus?';setTimeout(()=>{if(x.isConnected){delete x.dataset.arm;x.textContent='Hapus'}},3000)}}
  else if(g('#rs')){store.reset(1);toast('Data contoh 7 hari terisi')}
  else if(g('#cl')){store.reset(0);toast('Data demo dikosongkan')}
+ else if(g('#bkp'))backup();
+ else if(g('#imp'))$('#impf').click();
  else if(g('#cp')){const t=report();
   navigator.clipboard.writeText(t).then(()=>toast('Laporan tersalin')).catch(()=>{const a=document.createElement('textarea');a.value=t;document.body.append(a);a.select();try{document.execCommand('copy');toast('Laporan tersalin')}catch(_){toast('Tidak bisa menyalin')}a.remove()})}
 });
