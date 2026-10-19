@@ -95,6 +95,8 @@ dialog::backdrop{background:#0009}
 .fsb:disabled{opacity:.35;box-shadow:none;transform:translateY(5px)}
 nav button{font-size:calc(15px*min(var(--fs),1.15))}
 body.past header,body.past main{filter:grayscale(1)}
+/* legenda obat (dashboard) */
+.sw{display:inline-flex;align-items:center;gap:6px;font-size:calc(14px*var(--fs))}.sw::before{content:"";flex:none;width:14px;height:14px;border-radius:4px;background:var(--c)}
 /* ikon Material Symbols (ligature) */
 .mi,.chip.on::before,.hd::after{font-family:"Material Symbols Rounded";font-weight:500;font-style:normal;line-height:1;letter-spacing:normal;text-transform:none;white-space:nowrap;direction:ltr;font-feature-settings:"liga";-webkit-font-smoothing:antialiased}
 .mi{display:inline-block;flex:none;font-size:1.25em;user-select:none}
@@ -252,12 +254,24 @@ function bars(v,min,c){
  let g=`<line x1="8" x2="${W-8}" y1="${base}" y2="${base}" stroke="#8FA7AB" stroke-width="2"/>`;
  v.forEach((n,i)=>{const h=n/hi*(base-TP-16),x=8+i*bw+bw*.14,y=base-h,cx=x+bw*.36;g+=`<rect x="${x}" y="${y}" width="${bw*.72}" height="${h}" rx="6" fill="${c}"/><text class="v" x="${cx}" y="${y-5}" text-anchor="middle">${n}</text><text x="${cx}" y="${H-7}" text-anchor="middle">${dn(D7[i]+'T12:00')}</text>`});
  return `<svg class="cht" viewBox="0 0 ${W} ${H}" role="img">${g}</svg>`}
+const PAL=['#4E79A7','#F28E2B','#E15759','#76B7B2','#59A14F','#EDC948','#B07AA1','#FF9DA7','#9C755F','#BAB0AC','#2F4B7C','#8CD17D'];
+const OC=i=>PAL[i]||`hsl(${i*137.5%360},60%,${i%2?38:58}%)`; // obat ke-13 dst. dapat warna turunan
+function stack(v,min){ // v: per hari, daftar {n:nama,k:jumlah,c:warna} dari bawah ke atas
+ const tot=v.map(a=>a.reduce((t,x)=>t+x.k,0)),hi=Math.max(min,...tot)*1.2,bw=(W-16)/7,base=H-BM,u=(base-TP-16)/hi;
+ let g=`<line x1="8" x2="${W-8}" y1="${base}" y2="${base}" stroke="#8FA7AB" stroke-width="2"/>`;
+ v.forEach((a,i)=>{const x=8+i*bw+bw*.14,w=bw*.72,cx=x+w/2;let y=base;
+  a.forEach(q=>{const h=q.k*u;y-=h;g+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${q.c}" stroke="#fff" stroke-width="1.5"><title>${esc(q.n)}: ${q.k}x</title></rect>`});
+  g+=`<text class="v" x="${cx}" y="${y-5}" text-anchor="middle">${tot[i]}</text><text x="${cx}" y="${H-7}" text-anchor="middle">${dn(D7[i]+'T12:00')}</text>`});
+ return `<svg class="cht" viewBox="0 0 ${W} ${H}" role="img" aria-label="Jumlah obat per hari: ${v.map((_,i)=>dn(D7[i]+'T12:00')+' '+tot[i]).join(', ')}">${g}</svg>`}
 function viewDash(){
  const V=all.filter(e=>e.type=='vital'&&e.date>=D7[0]&&e.date<=today).sort((a,b)=>a.t-b.t);
  const pts=f=>V.filter(e=>e.d[f]!=null).map(e=>[e.t,e.d[f]]),none='<p class="sub">Belum ada pengukuran dalam 7 hari ini.</p>';
  const tile=(lb,f,fv,key)=>{const e=V.filter(x=>x.d[f]!=null).pop();return `<div class="st${e&&flags(e).join().includes(key)?' bad':''}"><span>${lb}</span><b>${e?fv(e.d):'-'}</b><small>${e?dn(e.t)+' '+tm(e):'belum ada'}</small></div>`};
  const ch=(f,c,lo,hi,refs,bad)=>pts(f).length?line([{c,p:pts(f),bad}],lo,hi,refs):none;
  const per=f=>D7.map(d=>all.filter(e=>e.date==d&&e.type==f));
+ const od=D7.map(d=>{const m=new Map();all.filter(e=>e.date==d&&e.type=='obat').forEach(e=>(e.d.obat||[]).forEach(n=>m.set(n,(m.get(n)||0)+1)));return m});
+ const names=[...new Set(od.flatMap(m=>[...m.keys()]))].sort((a,b)=>a.localeCompare(b,'id')),col=n=>OC(names.indexOf(n));
+ const stacks=od.map(m=>names.filter(n=>m.has(n)).map(n=>({n,k:m.get(n),c:col(n)})));
  const card=(t,b)=>`<section class="card"><h2>${t}</h2>${b}</section>`;
  return banners()+`<p class="sub">Titik dan garis merah menandai batas peringatan.</p><h2>Pengukuran terakhir</h2><div class="stats">${tile('Tensi','sis',d=>`${d.sis}/${d.dia??'-'}`,'Tekanan')}${tile('Nadi','nadi',d=>d.nadi,'Nadi')}${tile('Saturasi','spo2',d=>d.spo2+'%','Saturasi')}</div>`
  +card('Tekanan darah (mmHg)',`<p class="lgs"><span class="lg" style="--c:#17606B">Sistol (atas)</span><span class="lg dsh" style="--c:#C0771A">Diastol (bawah)</span></p>`+(pts('sis').length+pts('dia').length?line([{c:'#17606B',p:pts('sis'),bad:v=>v>=LIM.sisMax||v<=LIM.sisMin},{c:'#C0771A',dash:1,p:pts('dia'),bad:v=>v>=LIM.diaMax}],40,200,[LIM.sisMax,LIM.diaMax]):none))
@@ -265,6 +279,7 @@ function viewDash(){
  +card('Nadi (kali per menit)',ch('nadi','#6B4FA0',40,120,[LIM.nadiMin,LIM.nadiMax],v=>v<LIM.nadiMin||v>LIM.nadiMax))
  +card('Minum per hari (ml)',bars(per('makan').map(a=>a.reduce((n,e)=>n+(e.d.ml||0),0)),1500,'#2A6AA3'))
  +card('Ganti pampers per hari (kali)',bars(per('elim').map(a=>a.length),6,'#3F7A31'))
+ +card('Obat diminum per hari',names.length?`<p class="sub" style="margin-top:0">Tiap warna mewakili satu obat. Angka di atas batang adalah jumlah obat yang diminum pada hari itu.</p>${stack(stacks,10)}<p class="lgs" style="margin-top:12px">${names.map(n=>`<span class="sw" style="--c:${col(n)}">${esc(n)}</span>`).join('')}</p>`:'<p class="sub">Belum ada catatan obat dalam 7 hari ini.</p>')
  +`<button class="b2 w" data-tab="hist">${ic('menu_book')}Lihat riwayat harian</button>`
  +`<h2 class="hd2">Backup dan import data</h2><section class="card"><p class="sub" style="margin-top:0">Backup menyimpan semua catatan dan jadwal ke satu file. Import menambahkan isi file backup; data yang sudah ada tidak ditimpa.</p><div class="acts"><button type="button" class="b2" id="bkp">${ic('download')}Backup</button><button type="button" class="b2" id="imp">${ic('upload_file')}Import</button></div></section>`}
 function viewHist(){
