@@ -129,12 +129,15 @@ const kode=n=>KODE[n]||String(n).trim().slice(0,2).toLowerCase(); // obat di lua
 const T={vital:'Tensi & saturasi',makan:'Makan & minum',obat:'Obat diminum',elim:'Ganti pampers',kondisi:'Kondisi',lain:'Aktivitas & lainnya'};
 const F={ // [kunci, label, tipe(n=angka,1=pilih satu,m=pilih banyak,t=teks), opsi/satuan]
 vital:[['sis','Sistol (angka atas)','n','mmHg'],['dia','Diastol (angka bawah)','n','mmHg'],['nadi','Nadi','n','x/menit'],['spo2','Saturasi oksigen','n','%']],
-makan:[['waktu','Waktu makan','1',['Pagi','Siang','Malam','Camilan']],['cat','Menu dan keterangan','t','Mis. bubur 2 sendok, apel 2 potong'],['ml','Minum','n','ml'],['tersedak','Batuk atau tersedak','1',['Tidak','Ya']]],
+makan:[['jenis','Makan atau minum','1',['Makan','Minum']],['waktu','Waktu makan','1',['Pagi','Siang','Malam','Camilan']],['ml','Jumlah cairan','n','ml'],['cat','Catatan (opsional)','t',{Makan:'Mis. bubur 2 sendok, apel 2 potong',Minum:'Mis. air putih, teh hangat'}]],
 obat:[['obat','Obat yang diminum','m',MEDS],['cat','Catatan (opsional)','t']],
 elim:[['jenis','Isi pampers','1',['BAK','BAB','BAK dan BAB','Kering']],['banyak','Jumlah','1',['Sedikit','Sedang','Banyak']],['ket','Kondisi','1',['Normal','Lembek/cair','Keras','Pekat/keruh','Ada darah']],['cat','Catatan (opsional)','t']],
 kondisi:[['sadar','Kesadaran','1',['Sadar penuh','Mengantuk','Sulit dibangunkan']],['bicara','Bicara','1',['Jelas','Pelo','Lebih sulit','Tidak bicara']],['tangan','Kekuatan tangan/kaki','1',['Seperti biasa','Lebih baik','Lebih lemah']],['nyeri','Nyeri','1',['Tidak ada','Ringan','Sedang','Berat']],['mood','Suasana hati','1',['Tenang','Gelisah','Sedih']],['cat','Catatan (opsional)','t']],
 lain:[['jenis','Kegiatan','1',['Fisioterapi','Ubah posisi','Latihan gerak','Mandi/kebersihan','Cek kulit','Tidur','Kejadian khusus']],['cat','Keterangan','t']]};
-const KEY={makan:'waktu',obat:'obat',elim:'jenis',lain:'jenis'};
+const KEY={makan:'jenis',obat:'obat',elim:'jenis',lain:'jenis'};
+const KEY2={Makan:'waktu',Minum:'ml'}; // isian wajib kedua di Makan & minum, sesuai pilihan
+const SHOW={Makan:['waktu','cat'],Minum:['ml','cat']}; // kolom yang tampil di Makan & minum, sesuai pilihan Makan atau Minum
+const LEG={makan:[['tersedak','','1']]}; // kolom catatan lama (sudah tidak ada di form): tetap dibaca saat import backup
 const IC={vital:'monitor_heart',makan:'restaurant',obat:'medication',elim:'wc',kondisi:'sentiment_satisfied',lain:'bed'}; // nama ikon Material Symbols
 const ic=n=>`<i class="mi" aria-hidden="true">${n}</i>`;
 
@@ -148,6 +151,8 @@ const cmp=(a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||''));
 const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),2200)};
 let nm='';try{nm=localStorage.getItem('by')||''}catch(e){}
 let tab='now',cur=today,all=[],jad=[],day=[],kind='vital',vals={},err='',jam='',step=0;
+const fld=k=>k=='makan'?F.makan.filter(f=>f[0]=='jenis'||(SHOW[vals.jenis]||[]).includes(f[0])):F[k]; // kolom yang tampil di form
+const PH=o=>typeof o=='object'?o[vals.jenis]||'':o||''; // placeholder boleh beda untuk Makan dan Minum
 
 // ===== UKURAN TULISAN (A- / A+): kontrolnya hanya tampil di tab Jadwal, ukurannya berlaku di semua tab =====
 const FS=[.9,1,1.15,1.3,1.45];let fi=1; // fi=1 berarti ukuran awal 100%; ubah daftar FS bila perlu
@@ -179,7 +184,8 @@ if(!store){
    const d=add(today,-i),R=(a,b,k)=>a+(i*37+k*61)%(b-a+1),w=new Date(d+'T00:00').getDay();
    P(d,'06:00','lain',{jenis:'Tidur',cat:'Tidur sekitar 7 jam, terbangun 2 kali'});
    [['07:00',1],['13:00',2],['19:00',3]].forEach(([hm,k])=>{const hi=i==3&&k==2;P(d,hm,'vital',{sis:hi?168:R(124,146,k),dia:hi?102:R(76,90,k+1),nadi:R(64,84,k+2),spo2:R(96,98,k+3)})});
-   [['07:30','Pagi'],['12:30','Siang'],['15:30','Camilan'],['18:30','Malam']].forEach(([hm,x],k)=>P(d,hm,'makan',{waktu:x,cat:['Bubur dan telur','Nasi tim, sayur, ikan','Buah apel 2 potong','Bubur ayam'][k],ml:Math.round(R(150,300,k+6)/10)*10,tersedak:i==2&&x=='Malam'?'Ya':'Tidak'}));
+   [['07:30','Pagi'],['12:30','Siang'],['15:30','Camilan'],['18:30','Malam']].forEach(([hm,x],k)=>P(d,hm,'makan',{jenis:'Makan',waktu:x,cat:['Bubur dan telur','Nasi tim, sayur, ikan','Buah apel 2 potong','Bubur ayam'][k]}));
+   [['08:00','Air putih'],['10:30','Teh hangat'],['13:00','Air putih'],['16:00','Susu hangat'],['19:30','Air putih'],['21:00','Air hangat']].forEach(([hm,x],k)=>P(d,hm,'makan',{jenis:'Minum',ml:Math.round(R(100,250,k+6)/10)*10,cat:x}));
    P(d,'07:45','obat',{obat:['Lansoprazole 30 mg','Clopidogrel bisulfate 75 mg','Candesartan cilexetil 8 mg','Furosemide 40 mg','Spironolakton 25 mg','Digoxin 0,25 mg','Mecobalamin 500 mg']});
    P(d,'19:30','obat',{obat:['Atorvastatin calcium 20 mg','Astika (asetosal) 100 mg','Notisil (warfarin) 2 mg','Cavicur']});
    if(i==3)P(d,'16:30','obat',{obat:['Paracetamol 500 mg'],cat:'Mengeluh pusing ringan'});
@@ -211,14 +217,16 @@ const has=(t,fn)=>day.some(e=>e.type===t&&(!fn||fn(e.d)));
 const REQ=[['Tensi & saturasi',()=>has('vital')],['Makan pagi',()=>has('makan',d=>d.waktu==='Pagi')],['Makan siang',()=>has('makan',d=>d.waktu==='Siang')],['Makan malam',()=>has('makan',d=>d.waktu==='Malam')],['Obat',()=>has('obat')],['Ganti pampers',()=>has('elim')],['Kondisi',()=>has('kondisi')]];
 function flags(e){const d=e.d,f=[];
  if(e.type=='vital'){if(d.sis>=LIM.sisMax||d.dia>=LIM.diaMax)f.push('Tekanan darah tinggi');if(d.sis&&d.sis<=LIM.sisMin)f.push('Tekanan darah rendah');if(d.nadi&&(d.nadi<LIM.nadiMin||d.nadi>LIM.nadiMax))f.push('Nadi di luar batas');if(d.spo2&&d.spo2<LIM.spo2Min)f.push('Saturasi rendah')}
- if(e.type=='makan'&&d.tersedak=='Ya')f.push('Batuk/tersedak saat makan');
+ if(e.type=='makan'&&d.tersedak=='Ya')f.push('Batuk/tersedak saat makan'); // hanya catatan lama; kolom ini sudah dihapus dari form
  if(e.type=='kondisi'&&(d.sadar=='Sulit dibangunkan'||d.bicara=='Lebih sulit'||d.tangan=='Lebih lemah'||d.nyeri=='Berat'))f.push('Kondisi memburuk');
  if(e.type=='lain'&&d.jenis=='Kejadian khusus')f.push('Kejadian khusus');
  if(e.type=='elim'&&d.ket=='Ada darah')f.push('Ada darah di BAK/BAB');
  return f}
 const sum=e=>{const d=e.d;return({
  vital:()=>`Tensi ${d.sis??'-'}/${d.dia??'-'}, nadi ${d.nadi??'-'}, saturasi ${d.spo2??'-'}%`,
- makan:()=>`${d.waktu||''}${d.cat?', '+d.cat:''}${d.ml?', minum '+d.ml+' ml':''}${d.tersedak=='Ya'?', batuk/tersedak':''}`,
+ makan:()=>d.jenis=='Minum'?['Minum'+(d.ml?' '+d.ml+' ml':''),d.cat].filter(Boolean).join(', ')
+  :d.jenis=='Makan'?[d.waktu=='Camilan'?'Camilan':d.waktu?'Makan '+d.waktu.toLowerCase():'Makan',d.cat].filter(Boolean).join(', ')
+  :`${d.waktu||''}${d.cat?', '+d.cat:''}${d.ml?', minum '+d.ml+' ml':''}${d.tersedak=='Ya'?', batuk/tersedak':''}`, // catatan lama (sebelum ada pilihan makan/minum)
  obat:()=>(d.obat||[]).join(', ')+(d.cat?'. '+d.cat:''),
  elim:()=>[d.jenis,d.banyak,d.ket,d.cat].filter(Boolean).join(', '),
  kondisi:()=>[d.sadar,d.bicara&&'bicara '+d.bicara,d.tangan&&'tangan/kaki '+d.tangan,d.nyeri&&'nyeri '+d.nyeri,d.mood,d.cat].filter(Boolean).join(', '),
@@ -277,11 +285,13 @@ function viewDash(){
  const od=D7.map(d=>all.filter(e=>e.date==d&&e.type=='obat').flatMap(e=>(e.d.obat||[]).map(n=>({n,t:e.t,w:tm(e)}))).sort((a,b)=>a.t-b.t||a.n.localeCompare(b.n,'id'))); // tiap kali minum, urut jam (paling awal di bawah); jam sama: urut abjad nama obat
  const names=[...new Set(od.flatMap(a=>a.map(x=>x.n)))].sort((a,b)=>a.localeCompare(b,'id')),col=n=>OC(names.indexOf(n)); // legenda dan warna: urut abjad
  const stacks=od.map(a=>a.map(x=>({n:x.n,s:kode(x.n),k:1,c:col(x.n),w:x.w})));
+ const mkn=per('makan').map(a=>a.filter(e=>e.d.jenis!='Minum').length); // makan per hari; catatan Minum tidak dihitung (sudah ada grafik ml), catatan lama tanpa 'jenis' dihitung makan
  const card=(t,b)=>`<section class="card"><h2>${t}</h2>${b}</section>`;
  return banners()+`<p class="sub">Titik dan garis merah menandai batas peringatan.</p><h2>Pengukuran terakhir</h2><div class="stats">${tile('Tensi','sis',d=>`${d.sis}/${d.dia??'-'}`,'Tekanan')}${tile('Nadi','nadi',d=>d.nadi,'Nadi')}${tile('Saturasi','spo2',d=>d.spo2+'%','Saturasi')}</div>`
  +card('Tekanan darah (mmHg)',`<p class="lgs"><span class="lg" style="--c:#17606B">Sistol (atas)</span><span class="lg dsh" style="--c:#C0771A">Diastol (bawah)</span></p>`+(pts('sis').length+pts('dia').length?line([{c:'#17606B',p:pts('sis'),bad:v=>v>=LIM.sisMax||v<=LIM.sisMin},{c:'#C0771A',dash:1,p:pts('dia'),bad:v=>v>=LIM.diaMax}],40,200,[LIM.sisMax,LIM.diaMax]):none))
  +card('Saturasi oksigen (%)',ch('spo2','#2A6AA3',88,100,[LIM.spo2Min],v=>v<LIM.spo2Min))
  +card('Nadi (kali per menit)',ch('nadi','#6B4FA0',40,120,[LIM.nadiMin,LIM.nadiMax],v=>v<LIM.nadiMin||v>LIM.nadiMax))
+ +card('Makan per hari (kali)',bars(mkn,4,'#B3261E'))
  +card('Minum per hari (ml)',bars(per('makan').map(a=>a.reduce((n,e)=>n+(e.d.ml||0),0)),1500,'#2A6AA3'))
  +card('Ganti pampers per hari (kali)',bars(per('elim').map(a=>a.length),6,'#3F7A31'))
  +card('Obat diminum per hari',names.length?`<p class="sub" style="margin-top:0">Dari bawah ke atas, urutannya sesuai waktu obat diminum.</p>${stack(stacks,10)}<p class="lgs" style="margin-top:12px">${names.map(n=>`<span class="sw" style="--c:${col(n)};--t:${tc(col(n))}"><b class="kd">${esc(kode(n))}</b>${esc(n)}</span>`).join('')}</p>`:'<p class="sub">Belum ada catatan obat dalam 7 hari ini.</p>')
@@ -302,12 +312,12 @@ function render(){
  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab==(tab=='hist'?'dash':tab)));
  $('#add').hidden=tab!='now';$('.fsr').hidden=tab!='jad';
  $('#v').innerHTML=tab=='now'?viewNow():tab=='dash'?viewDash():tab=='hist'?viewHist():viewJad()}
-function sheet(){
- $('#sh').scrollTop=0;
+function sheet(keep){
+ if(!keep)$('#sh').scrollTop=0;
  if(!step){$('#sb').innerHTML=`<div class="sh"><div class="grip"></div><h2>Mau catat apa?</h2><div class="cats">${Object.keys(T).map(k=>`<button type="button" class="cat ${k}" data-k="${k}">${ic(IC[k])}${T[k]}</button>`).join('')}</div><button type="button" class="b2 w" id="cx">Batal</button></div>`;return}
  $('#sb').innerHTML=`<div class="sh"><div class="grip"></div><button type="button" class="b2 sm" id="bk">${ic('chevron_left')}Ganti jenis catatan</button><h2 class="ft ${kind}">${ic(IC[kind])}${T[kind]}</h2>`
- +`<label class="fld">Jam ${kind=='elim'?'ganti pampers':'kejadian'}<input type="time" id="jm" value="${jam}"></label>`+F[kind].map(([k,l,t,o])=>t=='n'?`<label class="fld">${l}<span class="u"><input inputmode="decimal" data-f="${k}" value="${esc(vals[k]??'')}"><i>${o}</i></span></label>`
-  :t=='t'?`<label class="fld">${l}<textarea rows="2" data-f="${k}" placeholder="${esc(o||'')}">${esc(vals[k]||'')}</textarea></label>`
+ +`<label class="fld">Jam ${kind=='elim'?'ganti pampers':'kejadian'}<input type="time" id="jm" value="${jam}"></label>`+fld(kind).map(([k,l,t,o])=>t=='n'?`<label class="fld">${l}<span class="u"><input inputmode="decimal" data-f="${k}" value="${esc(vals[k]??'')}"><i>${o}</i></span></label>`
+  :t=='t'?`<label class="fld">${l}<textarea rows="2" data-f="${k}" placeholder="${esc(PH(o))}">${esc(vals[k]||'')}</textarea></label>`
   :`<div class="fld">${l}<div class="chips" style="margin-top:6px">${o.map(x=>`<button type="button" class="chip${[].concat(vals[k]||[]).includes(x)?' on':''}" data-c="${k}" data-t="${t}" data-v="${esc(x)}">${x}</button>`).join('')}</div></div>`).join('')
  +`<label class="fld">Dicatat oleh<input id="by" value="${esc(nm)}" placeholder="Nama caregiver" autocomplete="name"></label><p class="er" id="er"></p><div class="acts"><button type="button" class="b2" id="cx">Batal</button><button type="button" class="b1" id="sv">Simpan</button></div></div>`}
 
@@ -321,7 +331,7 @@ function clean(c,x){ // periksa dan bersihkan satu data dari file; null bila tid
  if(c=='jadwal')return s(x.kind)?{id:x.id,kind:x.kind,date:x.date,time:s(x.time),note:s(x.note)}:null;
  if(!Object.keys(T).includes(x.type)||!Number.isFinite(x.t)||!x.d||typeof x.d!='object')return null;
  const d={};
- for(const[k,,t]of F[x.type]){const v=x.d[k];if(v==null||v==='')continue;
+ for(const[k,,t]of[...F[x.type],...(LEG[x.type]||[])]){const v=x.d[k];if(v==null||v==='')continue;
   if(t=='n'){if(Number.isFinite(v))d[k]=v}
   else if(t=='m'){if(Array.isArray(v)&&v.length)d[k]=v.map(String)}
   else if(typeof v=='string'||typeof v=='number')d[k]=String(v)}
@@ -367,11 +377,12 @@ document.addEventListener('click',e=>{const g=s=>e.target.closest(s);let x;
  else if(x=g('[data-k]')){jam=$('#jm')?.value||jam;kind=x.dataset.k;vals={};step=1;sheet()}
  else if(x=g('[data-c]')){const{c,t,v}=x.dataset;
   if(t=='m'){const a=vals[c]||[];vals[c]=a.includes(v)?a.filter(i=>i!=v):[...a,v];x.classList.toggle('on')}
-  else{const on=vals[c]!==v;vals[c]=on?v:'';x.parentNode.querySelectorAll('.chip').forEach(b=>b.classList.remove('on'));x.classList.toggle('on',on)}}
+  else{const on=vals[c]!==v;vals[c]=on?v:'';x.parentNode.querySelectorAll('.chip').forEach(b=>b.classList.remove('on'));x.classList.toggle('on',on);if(kind=='makan'&&c=='jenis'){jam=$('#jm')?.value||jam;sheet(1)}}}
  else if(g('#sv')){const d={};let bad='';
-  for(const[k,,t]of F[kind]){const v=vals[k];if(v==null||v===''||(Array.isArray(v)&&!v.length))continue;d[k]=t=='n'?Number(String(v).replace(',','.')):v;if(t=='n'&&isNaN(d[k]))bad='Isi angka saja.'}
-  const ks=Object.keys(d).filter(k=>k!='cat');
-  if(!nm.trim())bad='Isi nama pencatat.';else if(!bad&&(KEY[kind]?!ks.includes(KEY[kind]):!ks.length))bad=KEY[kind]?'Pilih "'+F[kind].find(f=>f[0]==KEY[kind])[1]+'" dulu.':'Isi minimal satu kolom.';
+  for(const[k,,t]of fld(kind)){const v=vals[k];if(v==null||v===''||(Array.isArray(v)&&!v.length))continue;d[k]=t=='n'?Number(String(v).replace(',','.')):v;if(t=='n'&&isNaN(d[k]))bad='Isi angka saja.'}
+  if(!(d.ml>0))delete d.ml; // jumlah cairan harus lebih dari 0
+  const ks=Object.keys(d).filter(k=>k!='cat'),mk=[KEY[kind],kind=='makan'&&KEY2[vals.jenis]].filter(Boolean).find(k=>!d[k]),mf=mk&&F[kind].find(f=>f[0]==mk);
+  if(!nm.trim())bad='Isi nama pencatat.';else if(!bad&&(KEY[kind]?mk:!ks.length))bad=KEY[kind]?(mf[2]=='n'?'Isi "':'Pilih "')+mf[1]+'" dulu.':'Isi minimal satu kolom.';
   const hm=$('#jm').value;if(!bad&&!hm)bad='Isi jamnya dulu.';if(bad){$('#er').textContent=bad;return}
   try{localStorage.setItem('by',nm.trim())}catch(_){}
   store.add('catatan',{date:cur,type:kind,t:hm?new Date(cur+'T'+hm).getTime():Date.now(),by:nm.trim(),d}).catch(()=>toast('Gagal menyimpan, cek koneksi'));
